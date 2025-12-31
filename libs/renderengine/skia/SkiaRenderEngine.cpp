@@ -334,8 +334,16 @@ SkiaRenderEngine::SkiaRenderEngine(Threaded threaded, PixelFormat pixelFormat,
             mBlurFilter = new GaussianBlurFilter(mRuntimeEffectManager, blurScale);
             break;
         }
-        case BlurAlgorithm::Kawase:
-        case BlurAlgorithm::KawaseDualFilter:
+        case BlurAlgorithm::Kawase: {
+            ALOGD("Background Blurs Enabled (Forced Dual Kawase)");
+            mBlurFilter = new KawaseBlurDualFilter(mRuntimeEffectManager, blurScale);
+            break;
+        }
+        case BlurAlgorithm::KawaseDualFilter: {
+            ALOGD("Background Blurs Enabled (Kawase dual-filtering algorithm)");
+            mBlurFilter = new KawaseBlurDualFilter(mRuntimeEffectManager, blurScale);
+            break;
+        }
         case BlurAlgorithm::KawaseDualFilterV2: {
             ALOGD("Background Blurs Enabled (Glass blur / Kawase V2 variant)");
             mBlurFilter = new GlassBlurFilter(mRuntimeEffectManager, blurScale);
