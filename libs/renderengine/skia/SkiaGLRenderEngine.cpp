@@ -267,7 +267,7 @@ SkiaGLRenderEngine::SkiaGLRenderEngine(const RenderEngineCreationArgs& args, EGL
                                        EGLContext ctxt, EGLSurface placeholder,
                                        EGLContext protectedContext, EGLSurface protectedPlaceholder)
       : SkiaRenderEngine(args.threaded, static_cast<PixelFormat>(args.pixelFormat),
-                         args.blurAlgorithm),
+                         args.blurAlgorithm, args.blurScale),
         mEGLDisplay(display),
         mEGLContext(ctxt),
         mPlaceholderSurface(placeholder),

@@ -40,7 +40,7 @@ public:
     // Maximum number of render passes
     static constexpr uint32_t kMaxPasses = 4;
 
-    explicit KawaseBlurFilter(RuntimeEffectManager& effectManager);
+    explicit KawaseBlurFilter(RuntimeEffectManager& effectManager, float blurScale = 1.0f);
     virtual ~KawaseBlurFilter(){}
 
     // Execute blur, saving it to a texture

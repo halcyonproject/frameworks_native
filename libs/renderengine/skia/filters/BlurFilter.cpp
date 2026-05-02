@@ -68,8 +68,11 @@ static SkMatrix getShaderTransform(const SkCanvas* canvas, const SkRect& blurRec
     return matrix;
 }
 
-BlurFilter::BlurFilter(RuntimeEffectManager& effectManager, const float maxCrossFadeRadius)
-      : mMaxCrossFadeRadius(maxCrossFadeRadius),
+BlurFilter::BlurFilter(RuntimeEffectManager& effectManager, const float blurScale,
+                       const float maxCrossFadeRadius)
+      : mInputScale(kInputScale * blurScale),
+        mInverseInputScale(1.0f / mInputScale),
+        mMaxCrossFadeRadius(maxCrossFadeRadius),
         mMixEffect(effectManager.mKnownEffects[kBlurFilter_MixEffect]) {}
 
 float BlurFilter::getMaxCrossFadeRadius() const {
@@ -86,7 +89,7 @@ void BlurFilter::drawBlurRegion(SkCanvas* canvas, const SkRRect& effectRegion,
     SkPaint paint;
     paint.setAlphaf(blurAlpha);
 
-    auto blurMatrix = getShaderTransform(canvas, blurRect, kInverseInputScale, zoomScale);
+    auto blurMatrix = getShaderTransform(canvas, blurRect, mInverseInputScale, zoomScale);
 
     SkSamplingOptions linearSampling(SkFilterMode::kLinear, SkMipmapMode::kNone);
     const auto blurShader = blurredImage->makeShader(SkTileMode::kMirror, SkTileMode::kMirror,

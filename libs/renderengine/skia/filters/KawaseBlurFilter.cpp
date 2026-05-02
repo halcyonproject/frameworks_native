@@ -53,8 +53,8 @@ const SkString kEffectSource_KawaseBlurEffect(
         "return half4(c.rgb * 0.2, 1.0);"
         "}");
 
-KawaseBlurFilter::KawaseBlurFilter(RuntimeEffectManager& effectManager)
-      : BlurFilter(effectManager) {
+KawaseBlurFilter::KawaseBlurFilter(RuntimeEffectManager& effectManager, float blurScale)
+      : BlurFilter(effectManager, blurScale) {
     mBlurEffect = effectManager.mKnownEffects[kKawaseBlurEffect];
 }
 
@@ -90,21 +90,21 @@ sk_sp<SkImage> KawaseBlurFilter::generate(SkiaGpuContext* context, const uint32_
     float radiusByPasses = tmpRadius / (float)numberOfPasses;
 
     // create blur surface with the bit depth and colorspace of the original surface
-    SkImageInfo scaledInfo = input->imageInfo().makeWH(std::ceil(blurRect.width() * kInputScale),
-                                                       std::ceil(blurRect.height() * kInputScale));
+    SkImageInfo scaledInfo = input->imageInfo().makeWH(std::ceil(blurRect.width() * mInputScale),
+                                                       std::ceil(blurRect.height() * mInputScale));
 
     // For sampling Skia's API expects the inverse of what logically seems appropriate. In this
     // case you might expect Translate(blurRect.fLeft, blurRect.fTop) X Scale(kInverseInputScale)
     // but instead we must do the inverse.
     SkMatrix blurMatrix = SkMatrix::Translate(-blurRect.fLeft, -blurRect.fTop);
-    blurMatrix.postScale(kInputScale, kInputScale);
+    blurMatrix.postScale(mInputScale, mInputScale);
 
     // start by downscaling and doing the first blur pass
     SkSamplingOptions linear(SkFilterMode::kLinear, SkMipmapMode::kNone);
     SkRuntimeShaderBuilder blurBuilder(mBlurEffect);
     blurBuilder.child("child") =
             input->makeShader(SkTileMode::kClamp, SkTileMode::kClamp, linear, blurMatrix);
-    blurBuilder.uniform("in_blurOffset") = radiusByPasses * kInputScale;
+    blurBuilder.uniform("in_blurOffset") = radiusByPasses * mInputScale;
 
     sk_sp<SkSurface> surface = context->createRenderTarget(scaledInfo);
     LOG_ALWAYS_FATAL_IF(!surface, "%s: Failed to create surface for blurring!", __func__);
@@ -123,7 +123,7 @@ sk_sp<SkImage> KawaseBlurFilter::generate(SkiaGpuContext* context, const uint32_
             LOG_ALWAYS_FATAL_IF(tmpBlur == nullptr, "%s: tmpBlur is null for pass %d", __func__, i);
             blurBuilder.child("child") =
                     tmpBlur->makeShader(SkTileMode::kClamp, SkTileMode::kClamp, linear);
-            blurBuilder.uniform("in_blurOffset") = (float) i * radiusByPasses * kInputScale;
+            blurBuilder.uniform("in_blurOffset") = (float) i * radiusByPasses * mInputScale;
             tmpBlur = makeImage(surfaceTwo.get(), &blurBuilder);
             using std::swap;
             swap(surface, surfaceTwo);

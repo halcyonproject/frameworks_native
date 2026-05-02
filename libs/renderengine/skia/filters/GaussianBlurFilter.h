@@ -35,7 +35,7 @@ namespace skia {
  */
 class GaussianBlurFilter: public BlurFilter {
 public:
-    explicit GaussianBlurFilter(RuntimeEffectManager& effectManager);
+    explicit GaussianBlurFilter(RuntimeEffectManager& effectManager, float blurScale = 1.0f);
     virtual ~GaussianBlurFilter(){}
 
     // Execute blur, saving it to a texture

@@ -94,8 +94,8 @@ const SkString kEffectSource_KawaseBlurDualFilter_HighSampleBlurEffect(R"(
     }
 )");
 
-KawaseBlurDualFilter::KawaseBlurDualFilter(RuntimeEffectManager& effectManager)
-      : BlurFilter(effectManager) {
+KawaseBlurDualFilter::KawaseBlurDualFilter(RuntimeEffectManager& effectManager, float blurScale)
+      : BlurFilter(effectManager, blurScale) {
     mLowSampleBlurEffect = effectManager.mKnownEffects[kKawaseBlurDualFilter_LowSampleBlurEffect];
     mHighSampleBlurEffect = effectManager.mKnownEffects[kKawaseBlurDualFilter_HighSampleBlurEffect];
 }
@@ -144,7 +144,7 @@ sk_sp<SkImage> KawaseBlurDualFilter::generate(SkiaGpuContext* context, const uin
     // Use a variable number of blur passes depending on the radius. The non-integer part of this
     // calculation is used to mix the final pass into the second-last with an alpha blend.
     constexpr int kMaxSurfaces = 3;
-    const float filterDepth = std::min(kMaxSurfaces - 1.0f, radius * kInputScale / 2.5f);
+    const float filterDepth = std::min(kMaxSurfaces - 1.0f, radius * mInputScale / 2.5f);
     const int filterPasses = std::min(kMaxSurfaces - 1, static_cast<int>(ceil(filterDepth)));
 
     auto makeSurface = [&](float scale) -> sk_sp<SkSurface> {
@@ -158,9 +158,9 @@ sk_sp<SkImage> KawaseBlurDualFilter::generate(SkiaGpuContext* context, const uin
 
     // Render into surfaces downscaled by 1x, 2x, and 4x from the initial downscale.
     sk_sp<SkSurface> surfaces[kMaxSurfaces] =
-            {filterPasses >= 0 ? makeSurface(1 * kInverseInputScale) : nullptr,
-             filterPasses >= 1 ? makeSurface(2 * kInverseInputScale) : nullptr,
-             filterPasses >= 2 ? makeSurface(4 * kInverseInputScale) : nullptr};
+            {filterPasses >= 0 ? makeSurface(1 * mInverseInputScale) : nullptr,
+             filterPasses >= 1 ? makeSurface(2 * mInverseInputScale) : nullptr,
+             filterPasses >= 2 ? makeSurface(4 * mInverseInputScale) : nullptr};
 
     // These weights for scaling offsets per-pass are handpicked to look good at 1 <= radius <= 250.
     static const float kWeights[5] = {
@@ -176,8 +176,8 @@ sk_sp<SkImage> KawaseBlurDualFilter::generate(SkiaGpuContext* context, const uin
     float sumSquaredR = powf(kWeights[0], 2.0f);
     for (int i = 0; i < filterPasses; i++) {
         const float alpha = std::min(1.0f, filterDepth - i);
-        sumSquaredR += powf(powf(2.0f, i) * alpha * kWeights[1 + i] / kInputScale, 2.0f);
-        sumSquaredR += powf(powf(2.0f, i + 1) * alpha * kWeights[4 - i] / kInputScale, 2.0f);
+        sumSquaredR += powf(powf(2.0f, i) * alpha * kWeights[1 + i] / mInputScale, 2.0f);
+        sumSquaredR += powf(powf(2.0f, i + 1) * alpha * kWeights[4 - i] / mInputScale, 2.0f);
     }
     // Solve for R = sqrt(sum(r_i^2)).
     const float step = radius * sqrt(1.0f / sumSquaredR);
@@ -188,7 +188,7 @@ sk_sp<SkImage> KawaseBlurDualFilter::generate(SkiaGpuContext* context, const uin
         // case one may expect Translate(blurRect.fLeft, blurRect.fTop) * Scale(kInverseInputScale)
         // but instead we must do the inverse.
         SkMatrix blurMatrix = SkMatrix::Translate(-blurRect.fLeft, -blurRect.fTop);
-        blurMatrix.postScale(kInputScale, kInputScale);
+        blurMatrix.postScale(mInputScale, mInputScale);
         const auto sourceShader =
                 input->makeShader(SkTileMode::kClamp, SkTileMode::kClamp,
                                   SkSamplingOptions(SkFilterMode::kLinear, SkMipmapMode::kNone),

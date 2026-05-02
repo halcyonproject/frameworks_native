@@ -102,13 +102,11 @@ static const bool kGaneshFlushAfterEveryLayer = kPrintLayerSettings;
 
 // Utility functions related to SkRect
 
-namespace {
-
-static inline SkRect getSkRect(const android::FloatRect& rect) {
+static inline SkRect getSkRect(const android::Rect& rect) {
     return SkRect::MakeLTRB(rect.left, rect.top, rect.right, rect.bottom);
 }
 
-static inline SkRect getSkRect(const android::Rect& rect) {
+static inline SkRect getSkRect(const android::FloatRect& rect) {
     return SkRect::MakeLTRB(rect.left, rect.top, rect.right, rect.bottom);
 }
 
@@ -270,7 +268,6 @@ static inline SkPoint3 getSkPoint3(const android::vec3& vector) {
     return SkPoint3::Make(vector.x, vector.y, vector.z);
 }
 
-} // namespace
 
 namespace android {
 namespace renderengine {
@@ -319,7 +316,7 @@ void SkiaRenderEngine::setEnableTracing(bool tracingEnabled) {
 }
 
 SkiaRenderEngine::SkiaRenderEngine(Threaded threaded, PixelFormat pixelFormat,
-                                   BlurAlgorithm blurAlgorithm)
+                                   BlurAlgorithm blurAlgorithm, float blurScale)
       : RenderEngine(threaded),
         mRuntimeEffectManager(RuntimeEffectManager(blurAlgorithm)),
         mBoxShadowUtils(mRuntimeEffectManager),
@@ -334,14 +331,14 @@ SkiaRenderEngine::SkiaRenderEngine(Threaded threaded, PixelFormat pixelFormat,
         }
         case BlurAlgorithm::Gaussian: {
             ALOGD("Background Blurs Enabled (Gaussian algorithm)");
-            mBlurFilter = new GaussianBlurFilter(mRuntimeEffectManager);
+            mBlurFilter = new GaussianBlurFilter(mRuntimeEffectManager, blurScale);
             break;
         }
         case BlurAlgorithm::Kawase:
         case BlurAlgorithm::KawaseDualFilter:
         case BlurAlgorithm::KawaseDualFilterV2: {
             ALOGD("Background Blurs Enabled (Glass blur / Kawase V2 variant)");
-            mBlurFilter = new GlassBlurFilter(mRuntimeEffectManager);
+            mBlurFilter = new GlassBlurFilter(mRuntimeEffectManager, blurScale);
             break;
         }
     }

@@ -96,8 +96,8 @@ const SkString kEffectSource_GlassBlurFilter_FinalUpSampleEffect(R"(
     }
 )");
 
-GlassBlurFilter::GlassBlurFilter(RuntimeEffectManager& effectManager)
-      : BlurFilter(effectManager) {
+GlassBlurFilter::GlassBlurFilter(RuntimeEffectManager& effectManager, float blurScale)
+      : BlurFilter(effectManager, blurScale) {
     mQuarterResDownSampleBlurEffect =
             effectManager.mKnownEffects[kKawaseBlurDualFilterV2_QuarterResDownSampleBlurEffect];
     mHalfResDownSampleBlurEffect =
@@ -154,7 +154,7 @@ sk_sp<SkImage> GlassBlurFilter::generate(SkiaGpuContext* context, const uint32_t
     const float radius = blurRadius * 0.57735f;
 
     constexpr int kMaxSurfaces = 3;
-    const float filterDepth = std::min(kMaxSurfaces - 1.0f, radius * kInputScale / 3.0f);
+    const float filterDepth = std::min(kMaxSurfaces - 1.0f, radius * mInputScale / 3.0f);
     const int filterPasses = std::min(kMaxSurfaces - 1, static_cast<int>(ceil(filterDepth)));
 
     SkIRect targetBlurRect;
@@ -172,9 +172,9 @@ sk_sp<SkImage> GlassBlurFilter::generate(SkiaGpuContext* context, const uint32_t
     };
 
     sk_sp<SkSurface> surfaces[kMaxSurfaces] =
-            {filterPasses >= 0 ? makeSurface(1 * kInverseInputScale) : nullptr,
-             filterPasses >= 1 ? makeSurface(2 * kInverseInputScale) : nullptr,
-             filterPasses >= 2 ? makeSurface(4 * kInverseInputScale) : nullptr};
+            {filterPasses >= 0 ? makeSurface(1 * mInverseInputScale) : nullptr,
+             filterPasses >= 1 ? makeSurface(2 * mInverseInputScale) : nullptr,
+             filterPasses >= 2 ? makeSurface(4 * mInverseInputScale) : nullptr};
 
     float sumSquaredR = 0;
     float sumSquaredStep = 0;
@@ -183,12 +183,12 @@ sk_sp<SkImage> GlassBlurFilter::generate(SkiaGpuContext* context, const uint32_t
         sumSquaredR += powf(powf(2.0f, i - 1) * alpha * M_SQRT2, 2.0f);
         sumSquaredStep += powf(powf(2.0f, i) * alpha, 2.0f);
     }
-    float step = sqrt(max(0.0f, powf(radius * kInputScale, 2) - sumSquaredR) /
+    float step = sqrt(max(0.0f, powf(radius * mInputScale, 2) - sumSquaredR) /
                       (sumSquaredStep == 0 ? 1 : sumSquaredStep));
 
     {
         SkMatrix blurMatrix = SkMatrix::Translate(-blurRect.fLeft, -blurRect.fTop);
-        blurMatrix.postScale(kInputScale, kInputScale);
+        blurMatrix.postScale(mInputScale, mInputScale);
         const auto sourceShader =
                 input->makeShader(SkTileMode::kClamp, SkTileMode::kClamp,
                                   SkSamplingOptions(SkFilterMode::kLinear, SkMipmapMode::kNone),

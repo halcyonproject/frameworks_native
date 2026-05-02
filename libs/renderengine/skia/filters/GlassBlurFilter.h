@@ -30,7 +30,7 @@ namespace skia {
 
 class GlassBlurFilter : public BlurFilter {
 public:
-    explicit GlassBlurFilter(RuntimeEffectManager& effectManager);
+    explicit GlassBlurFilter(RuntimeEffectManager& effectManager, float blurScale = 1.0f);
     virtual ~GlassBlurFilter() {}
 
     sk_sp<SkImage> generate(SkiaGpuContext* context, const uint32_t radius,

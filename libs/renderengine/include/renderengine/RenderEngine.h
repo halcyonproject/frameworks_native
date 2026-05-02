@@ -72,6 +72,11 @@
 #define PROPERTY_DEBUG_RENDERENGINE_BLUR_ALGORITHM "debug.renderengine.blur_algorithm"
 
 /**
+ * Scale factor for cross-window background blur.
+ */
+#define PROPERTY_DEBUG_RENDERENGINE_BLUR_SCALE "ro.surface_flinger.blur_scale"
+
+/**
  * Allows recording of Skia drawing commands with systrace.
  */
 #define PROPERTY_SKIA_ATRACE_ENABLED "debug.renderengine.skia_atrace_enabled"
@@ -353,6 +358,7 @@ struct RenderEngineCreationArgs {
     bool enableProtectedContext;
     bool precacheToneMapperShaderOnly;
     RenderEngine::BlurAlgorithm blurAlgorithm;
+    float blurScale;
     RenderEngine::ContextPriority contextPriority;
     RenderEngine::Threaded threaded;
     RenderEngine::GraphicsApi graphicsApi;
@@ -364,7 +370,7 @@ private:
     // must be created by Builder via constructor with full argument list
     RenderEngineCreationArgs(int _pixelFormat, uint32_t _imageCacheSize,
                              bool _enableProtectedContext, bool _precacheToneMapperShaderOnly,
-                             RenderEngine::BlurAlgorithm _blurAlgorithm,
+                             RenderEngine::BlurAlgorithm _blurAlgorithm, float _blurScale,
                              RenderEngine::ContextPriority _contextPriority,
                              RenderEngine::Threaded _threaded,
                              RenderEngine::GraphicsApi _graphicsApi,
@@ -374,6 +380,7 @@ private:
             enableProtectedContext(_enableProtectedContext),
             precacheToneMapperShaderOnly(_precacheToneMapperShaderOnly),
             blurAlgorithm(_blurAlgorithm),
+            blurScale(_blurScale),
             contextPriority(_contextPriority),
             threaded(_threaded),
             graphicsApi(_graphicsApi),
@@ -404,6 +411,10 @@ struct RenderEngineCreationArgs::Builder {
         this->blurAlgorithm = blurAlgorithm;
         return *this;
     }
+    Builder& setBlurScale(float blurScale) {
+        this->blurScale = blurScale;
+        return *this;
+    }
     Builder& setContextPriority(RenderEngine::ContextPriority contextPriority) {
         this->contextPriority = contextPriority;
         return *this;
@@ -422,7 +433,7 @@ struct RenderEngineCreationArgs::Builder {
     }
     RenderEngineCreationArgs build() const {
         return RenderEngineCreationArgs(pixelFormat, imageCacheSize, enableProtectedContext,
-                                        precacheToneMapperShaderOnly, blurAlgorithm,
+                                        precacheToneMapperShaderOnly, blurAlgorithm, blurScale,
                                         contextPriority, threaded, graphicsApi, skiaBackend);
     }
 
@@ -433,6 +444,7 @@ private:
     bool enableProtectedContext = false;
     bool precacheToneMapperShaderOnly = false;
     RenderEngine::BlurAlgorithm blurAlgorithm = RenderEngine::BlurAlgorithm::None;
+    float blurScale = 1.0f;
     RenderEngine::ContextPriority contextPriority = RenderEngine::ContextPriority::Medium;
     RenderEngine::Threaded threaded = RenderEngine::Threaded::Yes;
     RenderEngine::GraphicsApi graphicsApi = RenderEngine::GraphicsApi::GL;

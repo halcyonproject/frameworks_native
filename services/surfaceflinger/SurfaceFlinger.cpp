@@ -112,6 +112,7 @@
 #include <utils/misc.h>
 #include <algorithm>
 #include <cerrno>
+#include <cstdlib>
 #include <cinttypes>
 #include <cmath>
 #include <cstdint>
@@ -956,12 +957,14 @@ void SurfaceFlinger::init() FTL_FAKE_GUARD(kMainThreadContext) {
     // Get a RenderEngine for the given display / config (can't fail)
     // TODO(b/77156734): We need to stop casting and use HAL types when possible.
     // Sending maxFrameBufferAcquiredBuffers as the cache size is tightly tuned to single-display.
+    const float blurScale = std::atof(base::GetProperty(PROPERTY_DEBUG_RENDERENGINE_BLUR_SCALE, "1.0").c_str());
     auto builder = renderengine::RenderEngineCreationArgs::Builder()
                            .setPixelFormat(static_cast<int32_t>(defaultCompositionPixelFormat))
                            .setImageCacheSize(maxFrameBufferAcquiredBuffers)
                            .setEnableProtectedContext(enable_protected_contents(false))
                            .setPrecacheToneMapperShaderOnly(false)
                            .setBlurAlgorithm(chooseBlurAlgorithm(mSupportsBlur))
+                           .setBlurScale(blurScale)
                            .setContextPriority(
                                    useContextPriority
                                            ? renderengine::RenderEngine::ContextPriority::Realtime

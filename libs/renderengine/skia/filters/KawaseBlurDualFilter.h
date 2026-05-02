@@ -35,7 +35,7 @@ namespace skia {
  */
 class KawaseBlurDualFilter : public BlurFilter {
 public:
-    explicit KawaseBlurDualFilter(RuntimeEffectManager& effectManager);
+    explicit KawaseBlurDualFilter(RuntimeEffectManager& effectManager, float blurScale = 1.0f);
     virtual ~KawaseBlurDualFilter() {}
 
     // Execute blur, saving it to a texture
