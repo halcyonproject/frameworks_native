@@ -37,7 +37,8 @@ public:
     // Downsample scale factor used to improve performance
     static constexpr float kInverseInputScale = 1.0f / kInputScale;
 
-    explicit BlurFilter(RuntimeEffectManager& effectManager, float maxCrossFadeRadius = 10.0f);
+    explicit BlurFilter(RuntimeEffectManager& effectManager, float blurScale = 1.0f,
+                        float maxCrossFadeRadius = 10.0f);
     virtual ~BlurFilter(){}
 
     // Execute blur, saving it to a TEMPORARY texture. WARNING: the returned SkImage is only
@@ -70,6 +71,10 @@ public:
     virtual bool areBuffersPreallocated(const SkiaGpuContext* context, ui::Size displaySize) const {
         return true;
     }
+
+protected:
+    const float mInputScale;
+    const float mInverseInputScale;
 
 private:
     // To avoid downscaling artifacts, we interpolate the blurred fbo with the full composited

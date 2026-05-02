@@ -42,11 +42,8 @@ using android::hardware::graphics::common::V1_2::BufferUsage;
 class KawaseBlurDualFilterV2 : public BlurFilter {
 public:
     static constexpr int kMaxSurfaces = 4;
-    static constexpr float kInverseInputScale = 1.0f / kInputScale;
-    static constexpr float kScales[kMaxSurfaces] = {1 * kInverseInputScale, 2 * kInverseInputScale,
-                                                    4 * kInverseInputScale, 8 * kInverseInputScale};
 
-    explicit KawaseBlurDualFilterV2(RuntimeEffectManager& effectManager);
+    explicit KawaseBlurDualFilterV2(RuntimeEffectManager& effectManager, float blurScale = 1.0f);
     virtual ~KawaseBlurDualFilterV2() {}
 
     // Execute blur, saving it to a texture
@@ -66,6 +63,8 @@ private:
             BufferUsage::GPU_RENDER_TARGET | BufferUsage::GPU_TEXTURE;
     static constexpr uint64_t kProtectedUsageFlags =
             kUnprotectedUsageFlags | BufferUsage::PROTECTED;
+
+    const float mScales[kMaxSurfaces];
 
     sk_sp<SkRuntimeEffect> mQuarterResDownSampleBlurEffect;
     sk_sp<SkRuntimeEffect> mHalfResDownSampleBlurEffect;

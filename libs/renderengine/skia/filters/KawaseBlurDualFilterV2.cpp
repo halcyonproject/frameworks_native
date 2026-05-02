@@ -122,8 +122,10 @@ const SkString kEffectSource_KawaseBlurDualFilterV2_UpSampleBlurEffect(R"(
     }
 )");
 
-KawaseBlurDualFilterV2::KawaseBlurDualFilterV2(RuntimeEffectManager& effectManager)
-      : BlurFilter(effectManager) {
+KawaseBlurDualFilterV2::KawaseBlurDualFilterV2(RuntimeEffectManager& effectManager, float blurScale)
+      : BlurFilter(effectManager, blurScale),
+        mScales{1 * mInverseInputScale, 2 * mInverseInputScale,
+                4 * mInverseInputScale, 8 * mInverseInputScale} {
     mQuarterResDownSampleBlurEffect =
             effectManager.mKnownEffects[kKawaseBlurDualFilterV2_QuarterResDownSampleBlurEffect];
     mHalfResDownSampleBlurEffect =
@@ -205,7 +207,7 @@ sk_sp<SkImage> KawaseBlurDualFilterV2::generateTemporaryImage(SkiaGpuContext* co
 
     // Use a variable number of blur passes depending on the radius. The non-integer part of this
     // calculation is used to mix the final pass into the second-last with an alpha blend.
-    const float filterDepth = std::min(kMaxSurfaces - 1.0f, radius * kInputScale / 2.5f);
+    const float filterDepth = std::min(kMaxSurfaces - 1.0f, radius * mInputScale / 2.5f);
     const int filterPasses = std::min(kMaxSurfaces - 1, static_cast<int>(ceil(filterDepth)));
 
     // Ensure that no (partial) pixels outside the blurRect are included in the blur.
@@ -245,13 +247,13 @@ sk_sp<SkImage> KawaseBlurDualFilterV2::generateTemporaryImage(SkiaGpuContext* co
     SkImageInfo imageInfos[kMaxSurfaces];
     if (!usesPreallocatedTextures) {
         for (int i = 0; i < kMaxSurfaces; i++) {
-            surfaces[i] = filterPasses >= i ? makeSurface(kScales[i]) : nullptr;
+            surfaces[i] = filterPasses >= i ? makeSurface(mScales[i]) : nullptr;
             imageInfos[i] = surfaces[i] != nullptr ? surfaces[i]->imageInfo() : SkImageInfo();
         }
     } else {
         for (int i = 0; i < kMaxSurfaces; i++) {
             surfaces[i] = preallocatedTexturesRef[i]->getOrCreateSurface(display.outputDataspace);
-            imageInfos[i] = makeImageInfo(kScales[i]);
+            imageInfos[i] = makeImageInfo(mScales[i]);
         }
     }
 
@@ -265,7 +267,7 @@ sk_sp<SkImage> KawaseBlurDualFilterV2::generateTemporaryImage(SkiaGpuContext* co
         sumSquaredStep += powf(powf(2.0f, i) * alpha, 2.0f);
     }
     // Solve for R = sqrt(sum(r_i^2)).
-    float step = sqrt(max(0.0f, powf(radius * kInputScale, 2) - sumSquaredR) /
+    float step = sqrt(max(0.0f, powf(radius * mInputScale, 2) - sumSquaredR) /
                       (sumSquaredStep == 0 ? 1 : sumSquaredStep));
 
     // Start by downscaling and doing the first blur pass
@@ -274,7 +276,7 @@ sk_sp<SkImage> KawaseBlurDualFilterV2::generateTemporaryImage(SkiaGpuContext* co
         // case one may expect Translate(blurRect.fLeft, blurRect.fTop) * Scale(kInverseInputScale)
         // but instead we must do the inverse.
         SkMatrix blurMatrix = SkMatrix::Translate(-blurRect.fLeft, -blurRect.fTop);
-        blurMatrix.postScale(kInputScale, kInputScale);
+        blurMatrix.postScale(mInputScale, mInputScale);
         const auto sourceShader =
                 input->makeShader(SkTileMode::kClamp, SkTileMode::kClamp,
                                   SkSamplingOptions(SkFilterMode::kLinear, SkMipmapMode::kNone));
@@ -343,8 +345,8 @@ void KawaseBlurDualFilterV2::preallocateBuffers(SkiaGpuContext* context, ui::Siz
     displaySizeRef = ui::Size(side, side);
     size_t totalBytes = 0;
     for (int i = 0; i < kMaxSurfaces; i++) {
-        const int newW = std::max(1, static_cast<int>(static_cast<float>(side) / kScales[i]));
-        const int newH = std::max(1, static_cast<int>(static_cast<float>(side) / kScales[i]));
+        const int newW = std::max(1, static_cast<int>(static_cast<float>(side) / mScales[i]));
+        const int newH = std::max(1, static_cast<int>(static_cast<float>(side) / mScales[i]));
 
         sp<GraphicBuffer> buffer = sp<GraphicBuffer>::make(newW, newH, PIXEL_FORMAT_RGBA_8888, 1,
                                                            usageFlags, "KawaseBlurDualFilterV2");

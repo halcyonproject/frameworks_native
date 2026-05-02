@@ -326,7 +326,7 @@ void SkiaRenderEngine::setEnableTracing(bool tracingEnabled) {
 }
 
 SkiaRenderEngine::SkiaRenderEngine(Threaded threaded, PixelFormat pixelFormat,
-                                   BlurAlgorithm blurAlgorithm)
+                                   BlurAlgorithm blurAlgorithm, float blurScale)
       : RenderEngine(threaded),
         mRuntimeEffectManager(RuntimeEffectManager(blurAlgorithm)),
         mBoxShadowUtils(mRuntimeEffectManager),
@@ -341,17 +341,17 @@ SkiaRenderEngine::SkiaRenderEngine(Threaded threaded, PixelFormat pixelFormat,
         }
         case BlurAlgorithm::Gaussian: {
             ALOGD("Background Blurs Enabled (Gaussian algorithm)");
-            mBlurFilter = new GaussianBlurFilter(mRuntimeEffectManager);
+            mBlurFilter = new GaussianBlurFilter(mRuntimeEffectManager, blurScale);
             break;
         }
         case BlurAlgorithm::Kawase: {
             ALOGD("Background Blurs Enabled (Kawase algorithm)");
-            mBlurFilter = new KawaseBlurFilter(mRuntimeEffectManager);
+            mBlurFilter = new KawaseBlurFilter(mRuntimeEffectManager, blurScale);
             break;
         }
         case BlurAlgorithm::KawaseDualFilterV2: {
             ALOGD("Background Blurs Enabled (Kawase dual-filtering V2 algorithm)");
-            mBlurFilter = new KawaseBlurDualFilterV2(mRuntimeEffectManager);
+            mBlurFilter = new KawaseBlurDualFilterV2(mRuntimeEffectManager, blurScale);
             break;
         }
     }
