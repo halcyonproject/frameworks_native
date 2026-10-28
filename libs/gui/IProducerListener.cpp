@@ -239,4 +239,7 @@ bool BnProducerListener::needsAttachNotify() {
 }
 #endif
 
+extern "C" void _ZN7android18BnProducerListener16onBufferDetachedEi(int slot) {
+    ALOGE("BnProducerListener::onBufferDetached slot: %d", slot);
+}
 } // namespace android
