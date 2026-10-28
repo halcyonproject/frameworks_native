@@ -24,6 +24,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <deque>
+#include <dlfcn.h>
 #include <mutex>
 #include <thread>
 
@@ -2343,8 +2344,21 @@ int Surface::connect(int api, const sp<SurfaceListener>& listener, bool reportBu
     IGraphicBufferProducer::QueueBufferOutput output;
     mReportRemovedBuffers = reportBufferRemoval;
 
+    sp<SurfaceListener> effectiveListener = listener;
     if (listener != nullptr) {
-        mListenerProxy = sp<ProducerListenerProxy>::make(wp<Surface>::fromExisting(this), listener,
+        Dl_info info;
+        if (dladdr(*(void**)listener.get(), &info) && info.dli_fname != nullptr) {
+            if (strstr(info.dli_fname, "libcamera_algoup_jni") != nullptr ||
+                strstr(info.dli_fname, "libcamera_mianode_jni") != nullptr) {
+                ALOGI("Surface::connect: detected legacy Xiaomi camera blob listener (%s), using StubSurfaceListener",
+                      info.dli_fname);
+                effectiveListener = sp<StubSurfaceListener>::make();
+            }
+        }
+    }
+
+    if (effectiveListener != nullptr) {
+        mListenerProxy = sp<ProducerListenerProxy>::make(wp<Surface>::fromExisting(this), effectiveListener,
                                                          needsAcquiredNotify, needsDroppedNotify);
     }
 
@@ -2367,8 +2381,8 @@ int Surface::connect(int api, const sp<SurfaceListener>& listener, bool reportBu
         mConsumerRunningBehind = (output.numPendingBuffers >= 2);
 
 #if !defined(NO_BINDER)
-        if (listener && listener->needsDeathNotify()) {
-            mSurfaceDeathListener = sp<ProducerDeathListenerProxy>::make(listener);
+        if (effectiveListener && effectiveListener->needsDeathNotify()) {
+            mSurfaceDeathListener = sp<ProducerDeathListenerProxy>::make(effectiveListener);
             IInterface::asBinder(mGraphicBufferProducer)->linkToDeath(mSurfaceDeathListener);
         }
 #endif // !defined(NO_BINDER)
