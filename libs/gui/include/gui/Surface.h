@@ -515,6 +515,10 @@ public:
     virtual int unlockAndPost();
     virtual int query(int what, int* value) const;
 
+    // MIUI ADD: Keep releaseSlot here so that connect() falls on vtable offset 0x158 (index 43)
+    // as expected by legacy Xiaomi prebuilts (libcamera_algoup_jni and libcamera_mianode_jni).
+    virtual void releaseSlot(int slot);
+
     // When reportBufferRemoval is true, clients must call getAndFlushRemovedBuffers to fetch
     // GraphicBuffers removed from this surface after a dequeueBuffer, detachNextBuffer or
     // attachBuffer call. This allows clients with their own buffer caches to free up buffers no
@@ -523,8 +527,6 @@ public:
                         bool reportBufferRemoval = false, bool needsAcquiredNotify = false,
                         bool needsDroppedNotify = false);
     virtual int detachNextBuffer(sp<GraphicBuffer>* outBuffer, sp<Fence>* outFence);
-    // MIUI ADD
-    virtual void releaseSlot(int slot);
     virtual int attachBuffer(ANativeWindowBuffer*);
     virtual int attachBuffer(const sp<GraphicBuffer>& buffer);
 

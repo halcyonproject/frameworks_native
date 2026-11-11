@@ -2347,13 +2347,25 @@ int Surface::connect(int api, const sp<SurfaceListener>& listener, bool reportBu
     sp<SurfaceListener> effectiveListener = listener;
     if (listener != nullptr) {
         Dl_info info;
+        bool isXiaomiBlob = false;
         if (dladdr(*(void**)listener.get(), &info) && info.dli_fname != nullptr) {
             if (strstr(info.dli_fname, "libcamera_algoup_jni") != nullptr ||
                 strstr(info.dli_fname, "libcamera_mianode_jni") != nullptr) {
-                ALOGI("Surface::connect: detected legacy Xiaomi camera blob listener (%s), using StubSurfaceListener",
-                      info.dli_fname);
-                effectiveListener = sp<StubSurfaceListener>::make();
+                isXiaomiBlob = true;
             }
+        }
+        if (!isXiaomiBlob && dladdr(__builtin_return_address(0), &info) && info.dli_fname != nullptr) {
+            if (strstr(info.dli_fname, "libcamera_algoup_jni") != nullptr ||
+                strstr(info.dli_fname, "libcamera_mianode_jni") != nullptr) {
+                isXiaomiBlob = true;
+            }
+        }
+        if (isXiaomiBlob) {
+            ALOGI("Surface::connect: detected legacy Xiaomi camera blob caller/listener (%s), using StubSurfaceListener",
+                  info.dli_fname ? info.dli_fname : "unknown");
+            effectiveListener = sp<StubSurfaceListener>::make();
+            needsAcquiredNotify = false;
+            needsDroppedNotify = false;
         }
     }
 
